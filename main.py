@@ -38,7 +38,6 @@ transactions = [
         "amount": 5000,
         "due_date": "2025-06-30",
         "status": "Paid",
-        "discrepancy": False
     },
     {
         "transaction_id": "TXN002",
@@ -46,7 +45,6 @@ transactions = [
         "amount": 5000,
         "due_date": "2025-07-30",
         "status": "Unpaid",
-        "discrepancy": False
     }
 ]
 
