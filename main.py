@@ -1,10 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 
 app = FastAPI()
 
-# Enable CORS (optional if connecting from Zendesk or browser client)
+# Allow CORS (for external integrations like Zendesk)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -12,41 +13,38 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# Simulated database
+# Mock database
 users = {
     "marktan@email.com": {
-        "verified": True,
+        "verified": False,
         "orders": [
             {"id": "ORD123", "item": "Running Shoes", "status": "Delivered"},
             {"id": "ORD124", "item": "Wireless Headphones", "status": "Delivered"}
         ]
     },
     "katrina.yu@email.com": {
-        "verified": True,
+        "verified": False,
         "orders": [
             {"id": "ORD125", "item": "Pediatric Appointment", "status": "Confirmed"}
         ]
     }
 }
 
-# Request Models
-class EmailInput(BaseModel):
-    email: str
-
+# Refund request schema
 class RefundRequest(BaseModel):
     order_id: str
     reason: str
     preferred_resolution: str
 
-# API to send verification (simulated)
-@app.post("/api/send-verification")
-async def send_verification(data: EmailInput):
-    email = data.email
+# ✅ Send verification email (GET with email in query string)
+@app.get("/api/send-verification")
+async def send_verification(email: str):
     if email not in users:
         raise HTTPException(status_code=404, detail="User not found")
+    print(f"Verification email sent to {email}")
     return {"message": f"Verification email sent to {email}", "status": "success"}
 
-# API to verify user manually (for demo/testing)
+# ✅ Verify user (GET with email in query string)
 @app.get("/api/verify-user")
 async def verify_user(email: str):
     if email in users:
@@ -54,7 +52,7 @@ async def verify_user(email: str):
         return {"message": "User verified", "status": "success"}
     raise HTTPException(status_code=404, detail="User not found")
 
-# API to list orders if user is verified
+# ✅ List orders (GET with email in query string)
 @app.get("/api/orders")
 async def list_orders(email: str):
     user = users.get(email)
@@ -62,12 +60,12 @@ async def list_orders(email: str):
         return {"orders": user["orders"]}
     raise HTTPException(status_code=403, detail="User not verified or not found")
 
-# API to initiate refund based only on order_id
+# ✅ Initiate refund (POST with body)
 @app.post("/api/refund")
 async def initiate_refund(data: RefundRequest):
     user_email = None
 
-    # Search for the order ID across all users
+    # Search across users for the order
     for email, user_data in users.items():
         for order in user_data["orders"]:
             if order["id"] == data.order_id:
@@ -79,9 +77,8 @@ async def initiate_refund(data: RefundRequest):
     if not user_email:
         raise HTTPException(status_code=404, detail="Order ID not found")
 
-    # Simulate refund processing
-    print(f"Refund requested for Order {data.order_id}")
-    print(f"- Found associated user: {user_email}")
+    # Simulate refund process
+    print(f"Refund for Order {data.order_id} by {user_email}")
     print(f"- Reason: {data.reason}")
     print(f"- Resolution: {data.preferred_resolution}")
 
@@ -92,7 +89,7 @@ async def initiate_refund(data: RefundRequest):
         "status": "processing"
     }
 
-# Local run command
+# For local dev/testing
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
