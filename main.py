@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# CORS settings
+# Enable CORS (e.g., for Zendesk or frontend access)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -11,7 +11,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# Mock DB
+# Mock database
 users = {
     "marktan@email.com": {
         "orders": [
@@ -26,7 +26,7 @@ users = {
     }
 }
 
-# ✅ List Orders
+# ✅ List orders by user
 @app.get("/api/orders")
 async def list_orders(email: str):
     user = users.get(email)
@@ -34,37 +34,34 @@ async def list_orders(email: str):
         return {"orders": user["orders"]}
     raise HTTPException(status_code=404, detail="User not found")
 
-# ✅ Refund via URL Params
+# ✅ Refund request via URL params
 @app.get("/api/refund")
 async def initiate_refund(
-    user_id: str,
     order_id: str,
     reason_of_refund: str,
     preferred_resolution: str
 ):
-    user = users.get(user_id)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    # Find which user owns the order
+    for email, data in users.items():
+        for order in data["orders"]:
+            if order["id"] == order_id:
+                print(f"Refund request from {email}")
+                print(f"- Order ID: {order_id}")
+                print(f"- Reason: {reason_of_refund}")
+                print(f"- Resolution: {preferred_resolution}")
 
-    order_found = any(order["id"] == order_id for order in user["orders"])
-    if not order_found:
-        raise HTTPException(status_code=404, detail="Order not found for this user")
+                return {
+                    "message": "Refund request submitted",
+                    "user_id": email,
+                    "order_id": order_id,
+                    "reason": reason_of_refund,
+                    "resolution": preferred_resolution,
+                    "status": "processing"
+                }
 
-    print(f"Refund request from {user_id}")
-    print(f"- Order ID: {order_id}")
-    print(f"- Reason: {reason_of_refund}")
-    print(f"- Resolution: {preferred_resolution}")
+    raise HTTPException(status_code=404, detail="Order ID not found for any user")
 
-    return {
-        "message": "Refund request submitted",
-        "user_id": user_id,
-        "order_id": order_id,
-        "reason": reason_of_refund,
-        "resolution": preferred_resolution,
-        "status": "processing"
-    }
-
-# Local dev
+# Local dev runner
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
