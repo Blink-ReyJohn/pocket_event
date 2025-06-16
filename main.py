@@ -61,61 +61,6 @@ async def initiate_refund(
 
     raise HTTPException(status_code=404, detail="Order ID not found for any user")
 
-# Mock transactions database
-transactions = [
-    {
-        "transaction_id": "TXN001",
-        "email": "carlos.reyes@email.com",
-        "amount": 5000,
-        "due_date": "2025-06-30",
-        "status": "Paid",
-        "discrepancy": False
-    },
-    {
-        "transaction_id": "TXN002",
-        "email": "carlos.reyes@email.com",
-        "amount": 5000,
-        "due_date": "2025-07-30",
-        "status": "Unpaid",
-        "discrepancy": False
-    }
-]
-
-# GET: List a user's loan transactions
-from fastapi.responses import JSONResponse
-
-@app.get("/api/loans")
-async def list_loans(email: str):
-    if email not in users:
-        raise HTTPException(status_code=404, detail="User not found.")
-    
-    user_loans = [txn for txn in transactions if txn["email"] == email]
-    
-    if not user_loans:
-        raise HTTPException(status_code=404, detail="No loan records found for this user.")
-    
-    return JSONResponse(
-        status_code=200,
-        content={"statusCode": 200, "data": {"loans": user_loans}}
-    )
-
-# POST: Flag a loan transaction as having a discrepancy
-@app.post("/api/loans/discrepancy")
-async def report_discrepancy(email: str, transaction_id: str):
-    if email not in users:
-        raise HTTPException(status_code=404, detail="User not found.")
-
-    for txn in transactions:
-        if txn["transaction_id"] == transaction_id and txn["email"] == email:
-            txn["discrepancy"] = True
-            return {
-                "message": "Discrepancy flagged for manual review.",
-                "transaction_id": transaction_id,
-                "status": "flagged"
-            }
-    
-    raise HTTPException(status_code=404, detail="Transaction not found for this user.")
-
 # Local dev runner
 if __name__ == "__main__":
     import uvicorn
