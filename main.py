@@ -82,6 +82,8 @@ transactions = [
 ]
 
 # GET: List a user's loan transactions
+from fastapi.responses import JSONResponse
+
 @app.get("/api/loans")
 async def list_loans(email: str):
     if email not in users:
@@ -92,7 +94,10 @@ async def list_loans(email: str):
     if not user_loans:
         raise HTTPException(status_code=404, detail="No loan records found for this user.")
     
-    return {"loans": user_loans}
+    return JSONResponse(
+        status_code=200,
+        content={"statusCode": 200, "data": {"loans": user_loans}}
+    )
 
 # POST: Flag a loan transaction as having a discrepancy
 @app.post("/api/loans/discrepancy")
